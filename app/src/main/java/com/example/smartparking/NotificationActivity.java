@@ -1,12 +1,20 @@
 package com.example.smartparking;
 
-import android.widget.Toast;
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
@@ -14,54 +22,25 @@ public class NotificationActivity extends AppCompatActivity {
 
     private ArrayList<HistoryParkir> historyList = new ArrayList<>();
     private LinearLayout historyContainer;
+    
+    // Tambahkan referensi Firebase
+    private DatabaseReference databaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notification);
 
-        // INISIALISASI
+        // INISIALISASI UI
         historyContainer = findViewById(R.id.historyContainer);
 
-        // ===============================
-        // DATA DUMMY HISTORY
-        // ===============================
-        historyList.add(new HistoryParkir(
+        // INISIALISASI FIREBASE
+        // Karena server database Anda berada di region asia-southeast1, kita WAJIB memasukkan URL-nya
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/");
+        databaseReference = database.getReference("HistoryParkir");
 
-                "A1",
-                "08:00",
-                "09:20",
-                "1 Jam 20 Menit"
-        ));
-
-        historyList.add(new HistoryParkir(
-
-                "B2",
-                "10:15",
-                "11:00",
-                "45 Menit"
-        ));
-
-        historyList.add(new HistoryParkir(
-
-                "C3",
-                "13:10",
-                "15:20",
-                "2 Jam 10 Menit"
-        ));
-
-        // NOTIFIKASI SEMENTARA
-        for (HistoryParkir item : historyList) {
-
-            Toast.makeText(
-                    this,
-                    "Mobil " +
-                            " keluar dari slot " + item.slot,
-                    Toast.LENGTH_SHORT
-            ).show();
-        }
-
-        showHistory();
+        // MEMBACA DATA DARI FIREBASE SECARA REALTIME
+        ambilDataFirebase();
 
         // Klik Dashboard
         findViewById(R.id.navDashboard).setOnClickListener(v -> {
@@ -75,6 +54,44 @@ public class NotificationActivity extends AppCompatActivity {
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             startActivity(new Intent(this, ProfileActivity.class));
             overridePendingTransition(0, 0);
+        });
+    }
+
+    private void ambilDataFirebase() {
+        // Gunakan limitToLast(6) agar hanya memuat 6 data terbaru saja (sesuai jumlah slot)
+        databaseReference.limitToLast(6).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Bersihkan list agar tidak duplikat
+                historyList.clear();
+
+                // Lakukan looping pada setiap data di Firebase
+                for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
+                    HistoryParkir history = itemSnapshot.getValue(HistoryParkir.class);
+                    if (history != null) {
+                        historyList.add(history);
+                    }
+                }
+
+                // Urutkan berdasarkan angka pada nama slot (1 -> 6)
+                java.util.Collections.sort(historyList, (h1, h2) -> {
+                    try {
+                        int s1 = Integer.parseInt(h1.slot.replaceAll("[^0-9]", ""));
+                        int s2 = Integer.parseInt(h2.slot.replaceAll("[^0-9]", ""));
+                        return Integer.compare(s1, s2);
+                    } catch (Exception e) {
+                        return 0; // Jika gagal parsing, biarkan urutannya
+                    }
+                });
+
+                // Tampilkan data yang sudah diambil
+                showHistory();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(NotificationActivity.this, "Gagal memuat data dari database", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -109,12 +126,12 @@ public class NotificationActivity extends AppCompatActivity {
             masuk.setText("Masuk : " + item.waktuMasuk);
             masuk.setTextColor(0xFF666666);
 
-// Waktu Keluar
+            // Waktu Keluar
             TextView keluar = new TextView(this);
             keluar.setText("Keluar : " + item.waktuKeluar);
             keluar.setTextColor(0xFF666666);
 
-// Total Waktu
+            // Total Waktu
             TextView total = new TextView(this);
             total.setText("Total : " + item.totalWaktu);
             total.setTextColor(0xFF2E73C4);
