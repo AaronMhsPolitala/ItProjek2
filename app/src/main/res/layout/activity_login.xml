@@ -79,6 +79,8 @@
                 android:layout_marginTop="32dp"
                 android:background="@drawable/bg_input"
                 android:hint="Email"
+                android:inputType="textEmailAddress"
+                android:importantForAutofill="no"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textSize="14sp" />
@@ -91,6 +93,7 @@
                 android:background="@drawable/bg_input"
                 android:hint="Password"
                 android:inputType="textPassword"
+                android:importantForAutofill="no"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textSize="14sp" />
