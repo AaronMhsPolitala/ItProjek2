@@ -1,6 +1,8 @@
 package com.example.smartparking;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,75 +16,53 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private TextView tvProfileName, tvProfileEmail;
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabase;
-    private String currentUid;
+    private SharedPreferences sharedPreferences;
+
+    // Konstanta untuk SharedPreferences
+    private static final String PREF_NAME = "SmartParkingPrefs";
+    private static final String KEY_NAME = "user_name";
+    private static final String KEY_PASSWORD = "user_password";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // Inisialisasi Firebase
+        // Inisialisasi
         mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
+        sharedPreferences = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        // Inisialisasi View - Menggunakan ID yang sesuai dengan activity_profile.xml
+        // Inisialisasi View
         tvProfileName = findViewById(R.id.tvProfileName);
         tvProfileEmail = findViewById(R.id.tvProfileEmail);
 
+        // A. Memuat Nama dari SharedPreferences saat startup
+        loadUserName();
+
         if (currentUser != null) {
-            currentUid = currentUser.getUid();
-            
-            // Set data awal dari Firebase Auth
-            if (currentUser.getEmail() != null) {
+            tvProfileEmail.setText(currentUser.getEmail());
+            // Jika SharedPreferences kosong, gunakan inisial dari email sebagai default
+            if (sharedPreferences.getString(KEY_NAME, "").isEmpty()) {
                 String emailParts = currentUser.getEmail().split("@")[0];
                 tvProfileName.setText(emailParts);
-                tvProfileEmail.setText(currentUser.getEmail());
+                saveUserName(emailParts);
             }
-
-            // Ambil data real-time dari Database: users/{uid}
-            mDatabase.child("users").child(currentUid).addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        String nameFromDb = snapshot.child("name").getValue(String.class);
-                        String emailFromDb = snapshot.child("email").getValue(String.class);
-                        
-                        if (nameFromDb != null && !nameFromDb.isEmpty()) {
-                            tvProfileName.setText(nameFromDb);
-                        }
-                        if (emailFromDb != null && !emailFromDb.isEmpty()) {
-                            tvProfileEmail.setText(emailFromDb);
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(ProfileActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
         }
 
         // Tombol Kembali
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        // Tombol Ganti Nama
+        // B. Fitur Ganti Nama (Local Persistence)
         findViewById(R.id.btnChangeName).setOnClickListener(v -> showEditNameDialog());
 
-        // Tombol Ganti Password
-        findViewById(R.id.btnChangePassword).setOnClickListener(v -> startActivity(new Intent(this, ChangePasswordActivity.class)));
+        // C. Fitur Ganti Password (Local Persistence)
+        findViewById(R.id.btnChangePassword).setOnClickListener(v -> showChangePasswordDialog());
 
         // Tombol Logout
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -103,11 +83,12 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    // --- FUNGSI GANTI NAMA ---
+
     private void showEditNameDialog() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null);
         EditText etNewName = dialogView.findViewById(R.id.etNewName);
 
-        // Isi nama saat ini ke inputan
         if (tvProfileName != null) {
             etNewName.setText(tvProfileName.getText().toString());
             etNewName.setSelection(etNewName.getText().length());
@@ -121,7 +102,9 @@ public class ProfileActivity extends AppCompatActivity {
                 .setPositiveButton("Simpan", (dialog, which) -> {
                     String newName = etNewName.getText().toString().trim();
                     if (!newName.isEmpty()) {
-                        updateNameInDatabase(newName);
+                        saveUserName(newName);
+                        tvProfileName.setText(newName);
+                        Toast.makeText(this, "Nama berhasil diperbarui", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(this, "Nama tidak boleh kosong", Toast.LENGTH_SHORT).show();
                     }
@@ -129,16 +112,66 @@ public class ProfileActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void updateNameInDatabase(String newName) {
-        if (currentUid != null) {
-            mDatabase.child("users").child(currentUid).child("name").setValue(newName)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(this, "Nama berhasil diperbarui", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(this, "Gagal memperbarui nama", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+    private void saveUserName(String name) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(KEY_NAME, name);
+        editor.apply();
+    }
+
+    private void loadUserName() {
+        String savedName = sharedPreferences.getString(KEY_NAME, "");
+        if (!savedName.isEmpty()) {
+            tvProfileName.setText(savedName);
         }
+    }
+
+    // --- FUNGSI GANTI PASSWORD ---
+
+    private void showChangePasswordDialog() {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_change_password, null);
+        EditText etOldPassword = dialogView.findViewById(R.id.etOldPassword);
+        EditText etNewPassword = dialogView.findViewById(R.id.etNewPassword);
+        EditText etConfirmNewPassword = dialogView.findViewById(R.id.etConfirmNewPassword);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Ubah Password")
+                .setView(dialogView)
+                .setNegativeButton("Batal", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Simpan", (dialog, which) -> {
+                    String oldPass = etOldPassword.getText().toString();
+                    String newPass = etNewPassword.getText().toString();
+                    String confirmPass = etConfirmNewPassword.getText().toString();
+
+                    if (!validateOldPassword(oldPass)) {
+                        Toast.makeText(this, "Password lama salah!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (newPass.length() < 6) {
+                        Toast.makeText(this, "Password baru minimal 6 karakter!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (!newPass.equals(confirmPass)) {
+                        Toast.makeText(this, "Konfirmasi password tidak cocok!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    savePassword(newPass);
+                    Toast.makeText(this, "Password berhasil diperbarui secara lokal", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private boolean validateOldPassword(String inputOldPass) {
+        // Password default jika belum pernah ganti (misal: 123456)
+        String currentSavedPass = sharedPreferences.getString(KEY_PASSWORD, "123456");
+        return inputOldPass.equals(currentSavedPass);
+    }
+
+    private void savePassword(String newPass) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(KEY_PASSWORD, newPass);
+        editor.apply();
     }
 }
