@@ -45,11 +45,11 @@ public class HomeActivity extends AppCompatActivity {
         btnRefresh.setOnClickListener(v -> {
             btnRefresh.setEnabled(false); // Disable sementara agar tidak dispam
             btnRefresh.setText("Memuat...");
-            
+
             databaseReference.get().addOnCompleteListener(task -> {
                 btnRefresh.setEnabled(true);
                 btnRefresh.setText("Perbarui Data");
-                
+
                 if (!task.isSuccessful()) {
                     Toast.makeText(HomeActivity.this, "Gagal memuat data", Toast.LENGTH_SHORT).show();
                 } else {
@@ -76,17 +76,17 @@ public class HomeActivity extends AppCompatActivity {
 
         // Klik Profile
         findViewById(R.id.navProfile).setOnClickListener(v -> {
-            startActivity(new Intent(this, ProfileActivity.class));
+            startActivity(new Intent(this, ProfileSettingsActivity.class));
             overridePendingTransition(0, 0);
         });
     }
 
     private void updateUI(DataSnapshot snapshot) {
         if (!snapshot.exists()) return;
-        
+
         Integer slotKosong = snapshot.child("slotKosong").getValue(Integer.class);
         Integer totalSlot = snapshot.child("totalSlot").getValue(Integer.class);
-        
+
         if (slotKosong != null && totalSlot != null) {
             int terisi = totalSlot - slotKosong;
             tvTersedia.setText("Tersedia : " + slotKosong);

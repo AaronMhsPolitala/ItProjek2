@@ -42,7 +42,6 @@
         android:layout_margin="24dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="#212121"
         app:layout_constraintTop_toBottomOf="@id/headerProfile">
 
         <LinearLayout
@@ -64,7 +63,7 @@
                 android:text="Zainul Erfan"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:layout_marginTop="16dp" />
 
             <TextView
@@ -72,29 +71,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="zainul.erfan@mhs.politala.ac.id"
-                android:textColor="#A0A0A0"
+                android:textColor="#757575"
                 android:layout_marginTop="4dp" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#424242"
+                android:background="#E0E0E0"
                 android:layout_marginVertical="16dp" />
 
             <Button
                 android:id="@+id/btnChangeName"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:text="GANTI NAMA"
-                android:textColor="#B39DDB"
+                android:text="Ganti Nama"
                 style="@style/Widget.MaterialComponents.Button.TextButton" />
 
             <Button
                 android:id="@+id/btnChangePassword"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:text="GANTI PASSWORD"
-                android:textColor="#B39DDB"
+                android:text="Ganti Password"
                 style="@style/Widget.MaterialComponents.Button.TextButton" />
 
             <Button
@@ -102,7 +99,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="#D32F2F"
+                android:backgroundTint="#FF1F1F"
                 android:text="Logout"
                 android:textColor="#FFFFFF" />
         </LinearLayout>

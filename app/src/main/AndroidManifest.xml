@@ -13,7 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartParking">
-        
+
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -22,18 +22,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
-        
+
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
-        <activity android:name=".RegisterActivity" />
-        <activity android:name=".NotificationActivity" />
-        <activity android:name=".ProfileActivity" />
-        
+
+        <activity android:name=".RegisterActivity" android:exported="false" />
+        <activity android:name=".NotificationActivity" android:exported="false" />
+        <activity android:name=".ProfileActivity" android:exported="false" />
+        <activity android:name=".ChangePasswordActivity" android:exported="false" />
+
+        <activity
+            android:name=".ProfileSettingsActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
