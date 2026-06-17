@@ -2,10 +2,16 @@ package com.example.smartparking;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -16,6 +22,7 @@ import com.google.firebase.database.ValueEventListener;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private static final String TAG = "ProfileActivity";
     private TextView tvName, tvEmail;
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
@@ -38,11 +45,26 @@ public class ProfileActivity extends AppCompatActivity {
             String uid = currentUser.getUid();
             
             // Backup Nama dari Email jika data di database sedang loading
-            String emailParts = currentUser.getEmail().split("@")[0];
-            tvName.setText(emailParts);
-            tvEmail.setText(currentUser.getEmail());
+            if (currentUser.getEmail() != null) {
+                String emailParts = currentUser.getEmail().split("@")[0];
+                tvName.setText(emailParts);
+                tvEmail.setText(currentUser.getEmail());
+            }
+
+            // Klik Edit Nama
+            findViewById(R.id.btnEditName).setOnClickListener(v -> {
+                Log.d(TAG, "Tombol Edit Nama diklik");
+                showEditNameDialog(uid);
+            });
+
+            // Klik Ubah Password
+            findViewById(R.id.btnChangePassword).setOnClickListener(v -> {
+                Log.d(TAG, "Tombol Ubah Password diklik");
+                startActivity(new Intent(this, ChangePasswordActivity.class));
+            });
 
             // Ambil data asli dari Realtime Database: users/{uid}
+            // Menggunakan ValueEventListener agar UI terupdate otomatis saat data di Firebase berubah
             mDatabase.child("users").child(uid).addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -52,18 +74,17 @@ public class ProfileActivity extends AppCompatActivity {
                         
                         if (nameFromDb != null && !nameFromDb.isEmpty()) {
                             tvName.setText(nameFromDb);
+                            Log.d(TAG, "Nama berhasil dimuat dari database: " + nameFromDb);
                         }
                         if (emailFromDb != null && !emailFromDb.isEmpty()) {
                             tvEmail.setText(emailFromDb);
                         }
-                    } else {
-                        // Jika tidak ditemukan di Database, coba buat datanya sekarang 
-                        // agar kedepannya tidak kosong lagi
                     }
                 }
 
                 @Override
                 public void onCancelled(DatabaseError error) {
+                    Log.e(TAG, "Database Error: " + error.getMessage());
                     Toast.makeText(ProfileActivity.this, "Database Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
@@ -85,14 +106,61 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Klik Logout
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
-            // Perintah Logout Firebase
+            Log.d(TAG, "Proses Logout");
             FirebaseAuth.getInstance().signOut();
-
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             overridePendingTransition(0, 0);
         });
+    }
+
+    private void showEditNameDialog(String uid) {
+        // Persiapkan View dari dialog_edit_name.xml
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null);
+        EditText etNewName = dialogView.findViewById(R.id.etNewName);
+        
+        // Set nama saat ini ke EditText sebagai default
+        etNewName.setText(tvName.getText().toString());
+
+        // Buat Material Alert Dialog
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        // Listener tombol Simpan di dalam dialog
+        dialogView.findViewById(R.id.btnSave).setOnClickListener(v -> {
+            String newName = etNewName.getText().toString().trim();
+            
+            if (newName.isEmpty()) {
+                etNewName.setError("Nama tidak boleh kosong");
+                return;
+            }
+
+            Log.d(TAG, "Mencoba memperbarui nama menjadi: " + newName);
+
+            // Simpan ke Firebase Realtime Database: users/{uid}/name
+            mDatabase.child("users").child(uid).child("name").setValue(newName)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Berhasil memperbarui nama di Firebase");
+                        Toast.makeText(ProfileActivity.this, "Nama berhasil diperbarui", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Gagal memperbarui nama: " + e.getMessage());
+                        Toast.makeText(ProfileActivity.this, "Gagal memperbarui: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+        });
+
+        // Listener tombol Batal di dalam dialog
+        dialogView.findViewById(R.id.btnCancel).setOnClickListener(v -> {
+            Log.d(TAG, "Dialog Edit Nama dibatalkan");
+            dialog.dismiss();
+        });
+
+        dialog.show();
+        Log.d(TAG, "Dialog Edit Nama ditampilkan");
     }
 
     @Override

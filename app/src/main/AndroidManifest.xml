@@ -33,7 +33,8 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".NotificationActivity" />
         <activity android:name=".ProfileActivity" />
-        
+        <activity android:name=".ChangePasswordActivity" />
+
     </application>
 
 </manifest>
