@@ -76,7 +76,7 @@ public class HomeActivity extends AppCompatActivity {
 
         // Klik Profile
         findViewById(R.id.navProfile).setOnClickListener(v -> {
-            startActivity(new Intent(this, ProfileSettingsActivity.class));
+            startActivity(new Intent(this, ProfileActivity.class));
             overridePendingTransition(0, 0);
         });
     }

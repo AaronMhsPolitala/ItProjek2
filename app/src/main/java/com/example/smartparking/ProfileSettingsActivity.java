@@ -49,7 +49,7 @@ public class ProfileSettingsActivity extends AppCompatActivity {
         }
 
         // Hubungkan ke Firebase Database berdasarkan UID pengguna
-        mUserRef = FirebaseDatabase.getInstance().getReference("users").child(currentUser.getUid());
+        mUserRef = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference("users").child(currentUser.getUid());
 
         // Tampilkan Email langsung dari Firebase Auth
         if (tvProfileEmail != null && currentUser.getEmail() != null) {

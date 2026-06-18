@@ -39,51 +39,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- CARD SLOT TERSEDIA -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="6dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Slot Tersedia"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="#000000"/>
-
-                        <TextView
-                            android:id="@+id/tvAvailableSlot"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2 slot parkir kosong"
-                            android:textColor="#777777"
-                            android:textSize="14sp"/>
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="55dp"
-                        android:layout_height="35dp"
-                        android:src="@drawable/ic_car_blue"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- TITLE -->
             <TextView
                 android:layout_width="wrap_content"

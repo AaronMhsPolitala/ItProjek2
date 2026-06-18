@@ -34,7 +34,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Inisialisasi Firebase
         mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
+        mDatabase = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
         // Inisialisasi View
@@ -93,7 +93,7 @@ public class ProfileActivity extends AppCompatActivity {
         // Klik Dashboard
         findViewById(R.id.navDashboard).setOnClickListener(v -> {
             Intent intent = new Intent(this, HomeActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             overridePendingTransition(0, 0);
         });
