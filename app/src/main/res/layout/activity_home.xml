@@ -130,7 +130,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot1" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 1" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot1" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot A" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -141,7 +141,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot2" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 2" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot2" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot B" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -152,7 +152,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot3" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 3" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot3" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot C" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -163,7 +163,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot4" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 4" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot4" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot D" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -174,7 +174,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot5" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 5" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot5" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot E" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -185,7 +185,7 @@
                     app:cardBackgroundColor="@color/status_green"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
-                    <TextView android:id="@+id/tvSlot6" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot 6" android:textColor="@android:color/white" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvSlot6" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Slot F" android:textColor="@android:color/white" android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
             </GridLayout>
