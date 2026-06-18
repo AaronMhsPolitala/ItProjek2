@@ -6,12 +6,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class ChangePasswordActivity extends AppCompatActivity {
 
-    private TextInputEditText etNewPassword, etConfirmPassword;
+    private TextInputEditText etCurrentPassword, etNewPassword, etConfirmPassword;
     private MaterialButton btnSavePassword;
     private FirebaseAuth mAuth;
 
@@ -22,6 +24,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         
+        etCurrentPassword = findViewById(R.id.etCurrentPassword);
         etNewPassword = findViewById(R.id.etNewPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
         btnSavePassword = findViewById(R.id.btnSavePassword);
@@ -29,8 +32,14 @@ public class ChangePasswordActivity extends AppCompatActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
         btnSavePassword.setOnClickListener(v -> {
+            String currentPassword = etCurrentPassword.getText().toString().trim();
             String newPassword = etNewPassword.getText().toString().trim();
             String confirmPassword = etConfirmPassword.getText().toString().trim();
+
+            if (TextUtils.isEmpty(currentPassword)) {
+                etCurrentPassword.setError("Password saat ini tidak boleh kosong");
+                return;
+            }
 
             if (TextUtils.isEmpty(newPassword)) {
                 etNewPassword.setError("Password baru tidak boleh kosong");
@@ -47,22 +56,30 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 return;
             }
 
-            updatePassword(newPassword);
+            updatePassword(currentPassword, newPassword);
         });
     }
 
-    private void updatePassword(String newPassword) {
+    private void updatePassword(String currentPassword, String newPassword) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            user.updatePassword(newPassword)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(ChangePasswordActivity.this, "Password berhasil diperbarui", Toast.LENGTH_SHORT).show();
-                            finish();
-                        } else {
-                            Toast.makeText(ChangePasswordActivity.this, "Gagal memperbarui password: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
+        if (user != null && user.getEmail() != null) {
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPassword);
+            
+            user.reauthenticate(credential).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    user.updatePassword(newPassword)
+                            .addOnCompleteListener(updateTask -> {
+                                if (updateTask.isSuccessful()) {
+                                    Toast.makeText(ChangePasswordActivity.this, "Password berhasil diperbarui", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                } else {
+                                    Toast.makeText(ChangePasswordActivity.this, "Gagal memperbarui password: " + updateTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                } else {
+                    Toast.makeText(ChangePasswordActivity.this, "Password saat ini salah", Toast.LENGTH_LONG).show();
+                }
+            });
         }
     }
 }
