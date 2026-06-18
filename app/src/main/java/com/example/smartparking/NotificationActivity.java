@@ -1,14 +1,18 @@
 package com.example.smartparking;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Gravity;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -17,13 +21,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class NotificationActivity extends AppCompatActivity {
 
     private ArrayList<HistoryParkir> historyList = new ArrayList<>();
     private LinearLayout historyContainer;
-    
-    // Tambahkan referensi Firebase
     private DatabaseReference databaseReference;
 
     @Override
@@ -31,18 +34,16 @@ public class NotificationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notification);
 
-        // INISIALISASI UI
+        // Inisialisasi UI
         historyContainer = findViewById(R.id.historyContainer);
 
-        // INISIALISASI FIREBASE
-        // Karena server database Anda berada di region asia-southeast1, kita WAJIB memasukkan URL-nya
+        // Inisialisasi Firebase
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        databaseReference = database.getReference("HistoryParkir");
+        databaseReference = database.getReference("SlotNotifications");
 
-        // MEMBACA DATA DARI FIREBASE SECARA REALTIME
         ambilDataFirebase();
 
-        // Klik Dashboard
+        // Navigasi
         findViewById(R.id.navDashboard).setOnClickListener(v -> {
             Intent intent = new Intent(this, HomeActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -50,7 +51,6 @@ public class NotificationActivity extends AppCompatActivity {
             overridePendingTransition(0, 0);
         });
 
-        // Klik Profile
         findViewById(R.id.navProfile).setOnClickListener(v -> {
             startActivity(new Intent(this, ProfileActivity.class));
             overridePendingTransition(0, 0);
@@ -58,14 +58,11 @@ public class NotificationActivity extends AppCompatActivity {
     }
 
     private void ambilDataFirebase() {
-        // Gunakan limitToLast(6) agar hanya memuat 6 data terbaru saja (sesuai jumlah slot)
-        databaseReference.limitToLast(6).addValueEventListener(new ValueEventListener() {
+        databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                // Bersihkan list agar tidak duplikat
                 historyList.clear();
 
-                // Lakukan looping pada setiap data di Firebase
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
                     HistoryParkir history = itemSnapshot.getValue(HistoryParkir.class);
                     if (history != null) {
@@ -73,75 +70,87 @@ public class NotificationActivity extends AppCompatActivity {
                     }
                 }
 
-                // Urutkan berdasarkan angka pada nama slot (1 -> 6)
-                java.util.Collections.sort(historyList, (h1, h2) -> {
-                    try {
-                        int s1 = Integer.parseInt(h1.slot.replaceAll("[^0-9]", ""));
-                        int s2 = Integer.parseInt(h2.slot.replaceAll("[^0-9]", ""));
-                        return Integer.compare(s1, s2);
-                    } catch (Exception e) {
-                        return 0; // Jika gagal parsing, biarkan urutannya
-                    }
-                });
+                // Urutkan berdasarkan Alphabet slot (A-F)
+                Collections.sort(historyList, (h1, h2) -> h1.slot.compareTo(h2.slot));
 
-                // Tampilkan data yang sudah diambil
                 showHistory();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(NotificationActivity.this, "Gagal memuat data dari database", Toast.LENGTH_SHORT).show();
+                Toast.makeText(NotificationActivity.this, "Gagal sinkronisasi", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void showHistory() {
-
         historyContainer.removeAllViews();
 
+        if (historyList.isEmpty()) {
+            TextView emptyText = new TextView(this);
+            emptyText.setText("Menunggu update data dari sensor...");
+            emptyText.setGravity(Gravity.CENTER);
+            emptyText.setPadding(0, 100, 0, 0);
+            emptyText.setTextColor(0xFF666666);
+            historyContainer.addView(emptyText);
+            return;
+        }
+
         for (HistoryParkir item : historyList) {
+            // Gunakan CardView untuk tampilan yang lebih modern dan menarik
+            CardView card = new CardView(this);
+            LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            cardParams.setMargins(0, 8, 0, 24);
+            card.setLayoutParams(cardParams);
+            card.setRadius(24f);
+            card.setCardElevation(6f);
+            card.setUseCompatPadding(true);
 
-            LinearLayout card = new LinearLayout(this);
-            card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(25, 25, 25, 25);
-            card.setBackgroundColor(0xFFFFFFFF);
+            // Container di dalam card
+            LinearLayout innerLayout = new LinearLayout(this);
+            innerLayout.setOrientation(LinearLayout.HORIZONTAL);
+            innerLayout.setPadding(32, 32, 32, 32);
+            innerLayout.setGravity(Gravity.CENTER_VERTICAL);
+            innerLayout.setBackgroundColor(0xFFFFFFFF);
 
-            LinearLayout.LayoutParams params =
-                    new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                    );
+            // Ikon indikator status (Bulatan warna)
+            ImageView statusIcon = new ImageView(this);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(48, 48);
+            iconParams.setMargins(0, 0, 32, 0);
+            statusIcon.setLayoutParams(iconParams);
+            
+            boolean isTerisi = item.status != null && item.status.contains("terisi");
+            statusIcon.setImageResource(isTerisi ? R.drawable.circle_red : R.drawable.circle_green_bg);
 
-            params.setMargins(0, 0, 0, 20);
-            card.setLayoutParams(params);
+            // Layout teks (Slot & Keterangan)
+            LinearLayout textLayout = new LinearLayout(this);
+            textLayout.setOrientation(LinearLayout.VERTICAL);
+            textLayout.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-            // Slot
-            TextView slot = new TextView(this);
-            slot.setText("Slot: " + item.slot);
-            slot.setTextColor(0xFF666666);
+            // Judul Slot (Misal: Slot A)
+            TextView tvSlotName = new TextView(this);
+            tvSlotName.setText("Slot " + item.slot);
+            tvSlotName.setTextSize(18);
+            tvSlotName.setTypeface(null, Typeface.BOLD);
+            tvSlotName.setTextColor(0xFF2E73C4);
 
-            // Durasi
-            // Waktu Masuk
-            TextView masuk = new TextView(this);
-            masuk.setText("Masuk : " + item.waktuMasuk);
-            masuk.setTextColor(0xFF666666);
+            // Keterangan Lengkap: "terisi pada pukul 09:00"
+            TextView tvStatusDesc = new TextView(this);
+            String fullStatus = item.status + " " + item.waktu;
+            tvStatusDesc.setText(fullStatus);
+            tvStatusDesc.setTextSize(14);
+            tvStatusDesc.setTextColor(isTerisi ? 0xFFD32F2F : 0xFF388E3C);
+            tvStatusDesc.setPadding(0, 4, 0, 0);
 
-            // Waktu Keluar
-            TextView keluar = new TextView(this);
-            keluar.setText("Keluar : " + item.waktuKeluar);
-            keluar.setTextColor(0xFF666666);
+            textLayout.addView(tvSlotName);
+            textLayout.addView(tvStatusDesc);
 
-            // Total Waktu
-            TextView total = new TextView(this);
-            total.setText("Total : " + item.totalWaktu);
-            total.setTextColor(0xFF2E73C4);
-            total.setTextSize(14);
-            total.setPadding(0, 10, 0, 0);
-
-            card.addView(slot);
-            card.addView(masuk);
-            card.addView(keluar);
-            card.addView(total);
+            innerLayout.addView(statusIcon);
+            innerLayout.addView(textLayout);
+            card.addView(innerLayout);
 
             historyContainer.addView(card);
         }

@@ -33,7 +33,13 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".NotificationActivity" />
         <activity android:name=".ProfileActivity" />
-        <activity android:name=".ChangePasswordActivity" />
+        <activity
+            android:name=".ChangePasswordActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProfileSettingsActivity"
+            android:exported="false" />
 
     </application>
 

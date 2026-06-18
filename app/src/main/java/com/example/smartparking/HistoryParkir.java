@@ -3,23 +3,16 @@ package com.example.smartparking;
 public class HistoryParkir {
 
     public String slot;
-    public String waktuMasuk;
-    public String waktuKeluar;
-    public String totalWaktu;
+    public String status;
+    public String waktu;
 
     // Konstruktor kosong wajib untuk Firebase
     public HistoryParkir() {
     }
 
-    public HistoryParkir(
-                         String slot,
-                         String waktuMasuk,
-                         String waktuKeluar,
-                         String totalWaktu) {
-
+    public HistoryParkir(String slot, String status, String waktu) {
         this.slot = slot;
-        this.waktuMasuk = waktuMasuk;
-        this.waktuKeluar = waktuKeluar;
-        this.totalWaktu = totalWaktu;
+        this.status = status;
+        this.waktu = waktu;
     }
 }
