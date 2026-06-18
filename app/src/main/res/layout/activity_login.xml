@@ -85,18 +85,30 @@
                 android:paddingEnd="16dp"
                 android:textSize="14sp" />
 
-            <EditText
-                android:id="@+id/etPassword"
+            <!-- Kolom Password dengan Perbaikan Logika Ikon (Indikator Status) -->
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_input"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:importantForAutofill="no"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:textSize="14sp" />
+                app:hintEnabled="false"
+                app:endIconMode="password_toggle"
+                app:endIconDrawable="@drawable/ic_eye_selector"
+                app:endIconTint="@color/primary_blue"
+                app:boxBackgroundMode="none">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:importantForAutofill="no"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="48dp"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <Button
                 android:id="@+id/btnLogin"

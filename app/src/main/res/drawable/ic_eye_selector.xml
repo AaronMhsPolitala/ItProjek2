@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ikon saat password TERLIHAT (Checked) -->
+    <item android:drawable="@drawable/ic_eye_open" android:state_checked="true" />
+    <!-- Ikon saat password TERSEMBUNYI (Unchecked/Default) -->
+    <item android:drawable="@drawable/ic_eye_closed" />
+</selector>
