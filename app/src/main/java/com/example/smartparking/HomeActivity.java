@@ -49,12 +49,11 @@ public class HomeActivity extends AppCompatActivity {
         databaseReference = database.getReference("parking");
         notificationRef = database.getReference("SlotNotifications");
 
-        // Mendengarkan perubahan status secara real-time
-        databaseReference.addValueEventListener(new ValueEventListener() {
+        // Mengambil data awal dashboard secara satu kali (tidak otomatis update di UI)
+        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 updateUI(snapshot);
-                syncNotifications(snapshot);
             }
 
             @Override
@@ -63,10 +62,24 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        // Mendengarkan perubahan status secara real-time KHUSUS untuk sinkronisasi notifikasi
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                syncNotifications(snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Error listener di background
+            }
+        });
+
         btnRefresh.setOnClickListener(v -> {
             databaseReference.get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    updateUI(task.getResult());
+                    DataSnapshot result = task.getResult();
+                    updateUI(result);
                     Toast.makeText(HomeActivity.this, "Data diperbarui", Toast.LENGTH_SHORT).show();
                 }
             });
@@ -117,23 +130,41 @@ public class HomeActivity extends AppCompatActivity {
         DataSnapshot statusSnapshot = snapshot.child("status_per_slot");
         if (!statusSnapshot.exists()) return;
 
-        String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+        // Ambil data notifikasi yang ada sekarang dari Firebase terlebih dahulu untuk membandingkan status
+        notificationRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DataSnapshot notifSnapshot = task.getResult();
+                String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
 
-        // Mapping angka ke huruf: 1->A, 2->B, 3->C, 4->D, 5->E, 6->F
-        String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
+                for (int i = 1; i <= 6; i++) {
+                    String slotKey = "slot_" + i;
+                    Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
+                    if (isAvailable != null) {
+                        // Gunakan format deskriptif: "terisi pada pukul" atau "kosong pada pukul"
+                        String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
+                        String slotLetter = slotLetters[i-1];
 
-        for (int i = 1; i <= 6; i++) {
-            String slotKey = "slot_" + i;
-            Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
-            if (isAvailable != null) {
-                // Gunakan format deskriptif: "terisi pada pukul" atau "kosong pada pukul"
-                String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
-                String slotLetter = slotLetters[i-1];
-                
-                // Update ke node SlotNotifications menggunakan ID slot sebagai KEY (Overwrite)
-                HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
-                notificationRef.child(slotKey).setValue(notifData);
+                        // Periksa apakah notifikasi untuk slot ini sudah ada di database dan apakah statusnya berubah
+                        boolean statusBerubah = true;
+                        if (notifSnapshot != null && notifSnapshot.hasChild(slotKey)) {
+                            HistoryParkir existingNotif = notifSnapshot.child(slotKey).getValue(HistoryParkir.class);
+                            if (existingNotif != null && existingNotif.status != null) {
+                                // Jika status sama dengan sebelumnya, jangan ubah waktu/statusnya
+                                if (existingNotif.status.equals(statusTeks)) {
+                                    statusBerubah = false;
+                                }
+                            }
+                        }
+
+                        // Hanya update ke Firebase jika statusnya memang berubah dari sebelumnya
+                        if (statusBerubah) {
+                            HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
+                            notificationRef.child(slotKey).setValue(notifData);
+                        }
+                    }
+                }
             }
-        }
+        });
     }
 }

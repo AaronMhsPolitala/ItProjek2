@@ -61,17 +61,32 @@ public class NotificationActivity extends AppCompatActivity {
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                historyList.clear();
+                String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
+                HistoryParkir[] defaultSlots = new HistoryParkir[6];
+                for (int i = 0; i < 6; i++) {
+                    defaultSlots[i] = new HistoryParkir(slotLetters[i], "belum ada data", "-");
+                }
 
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
                     HistoryParkir history = itemSnapshot.getValue(HistoryParkir.class);
-                    if (history != null) {
-                        historyList.add(history);
+                    if (history != null && history.slot != null) {
+                        int index = -1;
+                        for (int i = 0; i < 6; i++) {
+                            if (slotLetters[i].equals(history.slot)) {
+                                index = i;
+                                break;
+                            }
+                        }
+                        if (index != -1) {
+                            defaultSlots[index] = history;
+                        }
                     }
                 }
 
-                // Urutkan berdasarkan Alphabet slot (A-F)
-                Collections.sort(historyList, (h1, h2) -> h1.slot.compareTo(h2.slot));
+                historyList.clear();
+                for (HistoryParkir h : defaultSlots) {
+                    historyList.add(h);
+                }
 
                 showHistory();
             }
@@ -123,7 +138,15 @@ public class NotificationActivity extends AppCompatActivity {
             statusIcon.setLayoutParams(iconParams);
             
             boolean isTerisi = item.status != null && item.status.contains("terisi");
-            statusIcon.setImageResource(isTerisi ? R.drawable.circle_red : R.drawable.circle_green_bg);
+            boolean isBelumAda = item.status != null && item.status.contains("belum ada");
+
+            if (isBelumAda) {
+                statusIcon.setImageResource(R.drawable.circle_green_bg);
+                statusIcon.setColorFilter(0xFF888888); // Abu-abu untuk data kosong
+            } else {
+                statusIcon.setImageResource(isTerisi ? R.drawable.circle_red : R.drawable.circle_green_bg);
+                statusIcon.clearColorFilter();
+            }
 
             // Layout teks (Slot & Keterangan)
             LinearLayout textLayout = new LinearLayout(this);
@@ -137,12 +160,22 @@ public class NotificationActivity extends AppCompatActivity {
             tvSlotName.setTypeface(null, Typeface.BOLD);
             tvSlotName.setTextColor(0xFF2E73C4);
 
-            // Keterangan Lengkap: "terisi pada pukul 09:00"
+            // Keterangan Lengkap
             TextView tvStatusDesc = new TextView(this);
-            String fullStatus = item.status + " " + item.waktu;
+            String fullStatus;
+            if (item.waktu == null || "-".equals(item.waktu) || item.waktu.isEmpty()) {
+                fullStatus = item.status;
+            } else {
+                fullStatus = item.status + " " + item.waktu;
+            }
             tvStatusDesc.setText(fullStatus);
             tvStatusDesc.setTextSize(14);
-            tvStatusDesc.setTextColor(isTerisi ? 0xFFD32F2F : 0xFF388E3C);
+            
+            if (isBelumAda) {
+                tvStatusDesc.setTextColor(0xFF888888); // Abu-abu
+            } else {
+                tvStatusDesc.setTextColor(isTerisi ? 0xFFD32F2F : 0xFF388E3C);
+            }
             tvStatusDesc.setPadding(0, 4, 0, 0);
 
             textLayout.addView(tvSlotName);
