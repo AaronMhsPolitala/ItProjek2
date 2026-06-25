@@ -16,8 +16,6 @@
         
         <activity
             android:name=".SplashActivity"
-            android:launchMode="singleInstance"
-            android:taskAffinity=""
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
