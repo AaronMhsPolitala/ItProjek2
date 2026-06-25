@@ -2,6 +2,7 @@ package com.example.smartparking;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -127,12 +128,17 @@ public class HomeActivity extends AppCompatActivity {
      * Sinkronisasi otomatis ke node SlotNotifications setiap ada perubahan status fisik
      */
     private void syncNotifications(DataSnapshot snapshot) {
+        Log.d("SmartParkingDebug", "HomeActivity: syncNotifications triggered");
         DataSnapshot statusSnapshot = snapshot.child("status_per_slot");
-        if (!statusSnapshot.exists()) return;
+        if (!statusSnapshot.exists()) {
+            Log.d("SmartParkingDebug", "HomeActivity: status_per_slot does not exist in snapshot");
+            return;
+        }
 
         // Ambil data notifikasi yang ada sekarang dari Firebase terlebih dahulu untuk membandingkan status
         notificationRef.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
+                Log.d("SmartParkingDebug", "HomeActivity: Retrieved existing notifications successfully");
                 DataSnapshot notifSnapshot = task.getResult();
                 String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
                 String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
@@ -140,6 +146,7 @@ public class HomeActivity extends AppCompatActivity {
                 for (int i = 1; i <= 6; i++) {
                     String slotKey = "slot_" + i;
                     Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
+                    Log.d("SmartParkingDebug", "HomeActivity: Checking " + slotKey + ", isAvailable = " + isAvailable);
                     if (isAvailable != null) {
                         // Gunakan format deskriptif: "terisi pada pukul" atau "kosong pada pukul"
                         String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
@@ -150,6 +157,7 @@ public class HomeActivity extends AppCompatActivity {
                         if (notifSnapshot != null && notifSnapshot.hasChild(slotKey)) {
                             HistoryParkir existingNotif = notifSnapshot.child(slotKey).getValue(HistoryParkir.class);
                             if (existingNotif != null && existingNotif.status != null) {
+                                Log.d("SmartParkingDebug", "HomeActivity: Existing status for " + slotKey + " is '" + existingNotif.status + "', new status is '" + statusTeks + "'");
                                 // Jika status sama dengan sebelumnya, jangan ubah waktu/statusnya
                                 if (existingNotif.status.equals(statusTeks)) {
                                     statusBerubah = false;
@@ -159,11 +167,18 @@ public class HomeActivity extends AppCompatActivity {
 
                         // Hanya update ke Firebase jika statusnya memang berubah dari sebelumnya
                         if (statusBerubah) {
+                            Log.d("SmartParkingDebug", "HomeActivity: Status changed for " + slotKey + ". Writing to Firebase: status=" + statusTeks + ", waktu=" + currentTime);
                             HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
-                            notificationRef.child(slotKey).setValue(notifData);
+                            notificationRef.child(slotKey).setValue(notifData)
+                                    .addOnSuccessListener(aVoid -> Log.d("SmartParkingDebug", "HomeActivity: Successfully updated " + slotKey + " in SlotNotifications"))
+                                    .addOnFailureListener(e -> Log.e("SmartParkingDebug", "HomeActivity: Failed to update " + slotKey + " in SlotNotifications", e));
+                        } else {
+                            Log.d("SmartParkingDebug", "HomeActivity: No status change for " + slotKey + ". Skipping update.");
                         }
                     }
                 }
+            } else {
+                Log.e("SmartParkingDebug", "HomeActivity: Failed to retrieve existing notifications", task.getException());
             }
         });
     }

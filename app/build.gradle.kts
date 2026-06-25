@@ -22,7 +22,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    // HAPUS blok kotlinOptions atau jvmToolchain yang sebelumnya membuat error
+ 
 }
 
 dependencies {

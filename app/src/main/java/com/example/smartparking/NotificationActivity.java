@@ -3,6 +3,7 @@ package com.example.smartparking;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -20,14 +21,18 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
 
 public class NotificationActivity extends AppCompatActivity {
 
     private ArrayList<HistoryParkir> historyList = new ArrayList<>();
     private LinearLayout historyContainer;
     private DatabaseReference databaseReference;
+    private DatabaseReference parkingReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +45,10 @@ public class NotificationActivity extends AppCompatActivity {
         // Inisialisasi Firebase
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         databaseReference = database.getReference("SlotNotifications");
+        parkingReference = database.getReference("parking");
 
         ambilDataFirebase();
+        setupParkingSync();
 
         // Navigasi
         findViewById(R.id.navDashboard).setOnClickListener(v -> {
@@ -57,10 +64,77 @@ public class NotificationActivity extends AppCompatActivity {
         });
     }
 
+    private void setupParkingSync() {
+        parkingReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                syncNotifications(snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("SmartParkingDebug", "NotificationActivity: Parking sync listener cancelled", error.toException());
+            }
+        });
+    }
+
+    private void syncNotifications(DataSnapshot snapshot) {
+        Log.d("SmartParkingDebug", "NotificationActivity: syncNotifications triggered");
+        DataSnapshot statusSnapshot = snapshot.child("status_per_slot");
+        if (!statusSnapshot.exists()) {
+            Log.d("SmartParkingDebug", "NotificationActivity: status_per_slot does not exist in snapshot");
+            return;
+        }
+
+        databaseReference.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Log.d("SmartParkingDebug", "NotificationActivity: Retrieved existing notifications successfully");
+                DataSnapshot notifSnapshot = task.getResult();
+                String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
+
+                for (int i = 1; i <= 6; i++) {
+                    String slotKey = "slot_" + i;
+                    Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
+                    Log.d("SmartParkingDebug", "NotificationActivity: Checking " + slotKey + ", isAvailable = " + isAvailable);
+                    if (isAvailable != null) {
+                        String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
+                        String slotLetter = slotLetters[i-1];
+
+                        boolean statusBerubah = true;
+                        if (notifSnapshot != null && notifSnapshot.hasChild(slotKey)) {
+                            HistoryParkir existingNotif = notifSnapshot.child(slotKey).getValue(HistoryParkir.class);
+                            if (existingNotif != null && existingNotif.status != null) {
+                                Log.d("SmartParkingDebug", "NotificationActivity: Existing status for " + slotKey + " is '" + existingNotif.status + "', new status is '" + statusTeks + "'");
+                                if (existingNotif.status.equals(statusTeks)) {
+                                    statusBerubah = false;
+                                }
+                            }
+                        }
+
+                        if (statusBerubah) {
+                            Log.d("SmartParkingDebug", "NotificationActivity: Status changed for " + slotKey + ". Writing to Firebase: status=" + statusTeks + ", waktu=" + currentTime);
+                            HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
+                            databaseReference.child(slotKey).setValue(notifData)
+                                    .addOnSuccessListener(aVoid -> Log.d("SmartParkingDebug", "NotificationActivity: Successfully updated " + slotKey + " in SlotNotifications"))
+                                    .addOnFailureListener(e -> Log.e("SmartParkingDebug", "NotificationActivity: Failed to update " + slotKey + " in SlotNotifications", e));
+                        } else {
+                            Log.d("SmartParkingDebug", "NotificationActivity: No status change for " + slotKey + ". Skipping update.");
+                        }
+                    }
+                }
+            } else {
+                Log.e("SmartParkingDebug", "NotificationActivity: Failed to retrieve existing notifications", task.getException());
+            }
+        });
+    }
+
     private void ambilDataFirebase() {
+        Log.d("SmartParkingDebug", "NotificationActivity: Starting ambilDataFirebase");
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Log.d("SmartParkingDebug", "NotificationActivity: onDataChange triggered. Snapshot exists: " + snapshot.exists() + ", Children count: " + snapshot.getChildrenCount());
                 String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
                 HistoryParkir[] defaultSlots = new HistoryParkir[6];
                 for (int i = 0; i < 6; i++) {
@@ -68,8 +142,10 @@ public class NotificationActivity extends AppCompatActivity {
                 }
 
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
+                    Log.d("SmartParkingDebug", "NotificationActivity: Processing child key=" + itemSnapshot.getKey() + ", value=" + itemSnapshot.getValue());
                     HistoryParkir history = itemSnapshot.getValue(HistoryParkir.class);
                     if (history != null && history.slot != null) {
+                        Log.d("SmartParkingDebug", "NotificationActivity: Parsed HistoryParkir: slot=" + history.slot + ", status=" + history.status + ", waktu=" + history.waktu);
                         int index = -1;
                         for (int i = 0; i < 6; i++) {
                             if (slotLetters[i].equals(history.slot)) {
@@ -80,6 +156,8 @@ public class NotificationActivity extends AppCompatActivity {
                         if (index != -1) {
                             defaultSlots[index] = history;
                         }
+                    } else {
+                        Log.d("SmartParkingDebug", "NotificationActivity: Parsed HistoryParkir is null or slot is null");
                     }
                 }
 
