@@ -34,7 +34,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Inisialisasi Firebase
         mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
         // Inisialisasi View

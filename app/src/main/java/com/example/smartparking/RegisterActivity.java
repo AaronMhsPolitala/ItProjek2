@@ -30,7 +30,7 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
         mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/").getReference();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
 
         etName = findViewById(R.id.etName);
         etEmail = findViewById(R.id.etEmail);

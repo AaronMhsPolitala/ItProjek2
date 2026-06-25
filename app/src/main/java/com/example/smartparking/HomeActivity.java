@@ -45,7 +45,7 @@ public class HomeActivity extends AppCompatActivity {
         cardSlots[4] = findViewById(R.id.cardSlot5);
         cardSlots[5] = findViewById(R.id.cardSlot6);
 
-        FirebaseDatabase database = FirebaseDatabase.getInstance("https://itprojek2-default-rtdb.asia-southeast1.firebasedatabase.app/");
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
         databaseReference = database.getReference("parking");
         notificationRef = database.getReference("SlotNotifications");
 
