@@ -36,6 +36,7 @@ public class NotificationActivity extends AppCompatActivity {
     private ValueEventListener parkingListener;
     private ValueEventListener notificationListener;
     private DataSnapshot latestNotifSnapshot;
+    private DataSnapshot latestParkingSnapshot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,13 +81,18 @@ public class NotificationActivity extends AppCompatActivity {
         if (parkingReference != null && parkingListener != null) {
             parkingReference.removeEventListener(parkingListener);
         }
+        latestParkingSnapshot = null;
+        latestNotifSnapshot = null;
     }
 
     private void setupParkingSync() {
         parkingListener = parkingReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                syncNotifications(snapshot);
+                latestParkingSnapshot = snapshot;
+                if (latestNotifSnapshot != null) {
+                    syncNotifications(snapshot);
+                }
             }
 
             @Override
@@ -145,6 +151,9 @@ public class NotificationActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestNotifSnapshot = snapshot;
+                if (latestParkingSnapshot != null) {
+                    syncNotifications(latestParkingSnapshot);
+                }
                 Log.d("SmartParkingDebug", "NotificationActivity: onDataChange triggered. Snapshot exists: " + snapshot.exists() + ", Children count: " + snapshot.getChildrenCount());
                 String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
                 HistoryParkir[] defaultSlots = new HistoryParkir[6];

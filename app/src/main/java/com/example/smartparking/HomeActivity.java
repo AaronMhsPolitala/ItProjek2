@@ -32,6 +32,7 @@ public class HomeActivity extends AppCompatActivity {
     private ValueEventListener parkingListener;
     private ValueEventListener notificationListener;
     private DataSnapshot latestNotifSnapshot;
+    private DataSnapshot latestParkingSnapshot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +95,10 @@ public class HomeActivity extends AppCompatActivity {
         parkingListener = databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                syncNotifications(snapshot);
+                latestParkingSnapshot = snapshot;
+                if (latestNotifSnapshot != null) {
+                    syncNotifications(snapshot);
+                }
             }
 
             @Override
@@ -107,6 +111,9 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestNotifSnapshot = snapshot;
+                if (latestParkingSnapshot != null) {
+                    syncNotifications(latestParkingSnapshot);
+                }
             }
 
             @Override
@@ -125,6 +132,8 @@ public class HomeActivity extends AppCompatActivity {
         if (notificationRef != null && notificationListener != null) {
             notificationRef.removeEventListener(notificationListener);
         }
+        latestParkingSnapshot = null;
+        latestNotifSnapshot = null;
     }
 
     private void updateUI(DataSnapshot snapshot) {
