@@ -37,6 +37,7 @@ public class NotificationActivity extends AppCompatActivity {
     private ValueEventListener notificationListener;
     private DataSnapshot latestNotifSnapshot;
     private DataSnapshot latestParkingSnapshot;
+    private boolean hasDoneInitialSync = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +84,7 @@ public class NotificationActivity extends AppCompatActivity {
         }
         latestParkingSnapshot = null;
         latestNotifSnapshot = null;
+        hasDoneInitialSync = false;
     }
 
     private void setupParkingSync() {
@@ -91,6 +93,7 @@ public class NotificationActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestParkingSnapshot = snapshot;
                 if (latestNotifSnapshot != null) {
+                    hasDoneInitialSync = true;
                     syncNotifications(snapshot);
                 }
             }
@@ -151,7 +154,8 @@ public class NotificationActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestNotifSnapshot = snapshot;
-                if (latestParkingSnapshot != null) {
+                if (latestParkingSnapshot != null && !hasDoneInitialSync) {
+                    hasDoneInitialSync = true;
                     syncNotifications(latestParkingSnapshot);
                 }
                 Log.d("SmartParkingDebug", "NotificationActivity: onDataChange triggered. Snapshot exists: " + snapshot.exists() + ", Children count: " + snapshot.getChildrenCount());

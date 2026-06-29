@@ -33,6 +33,7 @@ public class HomeActivity extends AppCompatActivity {
     private ValueEventListener notificationListener;
     private DataSnapshot latestNotifSnapshot;
     private DataSnapshot latestParkingSnapshot;
+    private boolean hasDoneInitialSync = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +98,7 @@ public class HomeActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestParkingSnapshot = snapshot;
                 if (latestNotifSnapshot != null) {
+                    hasDoneInitialSync = true;
                     syncNotifications(snapshot);
                 }
             }
@@ -111,7 +113,8 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 latestNotifSnapshot = snapshot;
-                if (latestParkingSnapshot != null) {
+                if (latestParkingSnapshot != null && !hasDoneInitialSync) {
+                    hasDoneInitialSync = true;
                     syncNotifications(latestParkingSnapshot);
                 }
             }
@@ -134,6 +137,7 @@ public class HomeActivity extends AppCompatActivity {
         }
         latestParkingSnapshot = null;
         latestNotifSnapshot = null;
+        hasDoneInitialSync = false;
     }
 
     private void updateUI(DataSnapshot snapshot) {
