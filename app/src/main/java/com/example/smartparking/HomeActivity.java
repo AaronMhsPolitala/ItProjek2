@@ -29,6 +29,9 @@ public class HomeActivity extends AppCompatActivity {
     private MaterialCardView[] cardSlots = new MaterialCardView[6];
     private DatabaseReference databaseReference;
     private DatabaseReference notificationRef;
+    private ValueEventListener parkingListener;
+    private ValueEventListener notificationListener;
+    private DataSnapshot latestNotifSnapshot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,19 +66,6 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        // Mendengarkan perubahan status secara real-time KHUSUS untuk sinkronisasi notifikasi
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                syncNotifications(snapshot);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Error listener di background
-            }
-        });
-
         btnRefresh.setOnClickListener(v -> {
             databaseReference.get().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
@@ -95,6 +85,46 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(new Intent(this, ProfileActivity.class));
             overridePendingTransition(0, 0);
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        
+        parkingListener = databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                syncNotifications(snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Error listener di background
+            }
+        });
+
+        notificationListener = notificationRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                latestNotifSnapshot = snapshot;
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Error listener di background
+            }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (databaseReference != null && parkingListener != null) {
+            databaseReference.removeEventListener(parkingListener);
+        }
+        if (notificationRef != null && notificationListener != null) {
+            notificationRef.removeEventListener(notificationListener);
+        }
     }
 
     private void updateUI(DataSnapshot snapshot) {
@@ -135,51 +165,42 @@ public class HomeActivity extends AppCompatActivity {
             return;
         }
 
-        // Ambil data notifikasi yang ada sekarang dari Firebase terlebih dahulu untuk membandingkan status
-        notificationRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                Log.d("SmartParkingDebug", "HomeActivity: Retrieved existing notifications successfully");
-                DataSnapshot notifSnapshot = task.getResult();
-                String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-                String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
+        String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+        String[] slotLetters = {"A", "B", "C", "D", "E", "F"};
 
-                for (int i = 1; i <= 6; i++) {
-                    String slotKey = "slot_" + i;
-                    Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
-                    Log.d("SmartParkingDebug", "HomeActivity: Checking " + slotKey + ", isAvailable = " + isAvailable);
-                    if (isAvailable != null) {
-                        // Gunakan format deskriptif: "terisi pada pukul" atau "kosong pada pukul"
-                        String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
-                        String slotLetter = slotLetters[i-1];
+        for (int i = 1; i <= 6; i++) {
+            String slotKey = "slot_" + i;
+            Boolean isAvailable = statusSnapshot.child(slotKey).getValue(Boolean.class);
+            Log.d("SmartParkingDebug", "HomeActivity: Checking " + slotKey + ", isAvailable = " + isAvailable);
+            if (isAvailable != null) {
+                // Gunakan format deskriptif: "terisi pada pukul" atau "kosong pada pukul"
+                String statusTeks = isAvailable ? "kosong pada pukul" : "terisi pada pukul";
+                String slotLetter = slotLetters[i-1];
 
-                        // Periksa apakah notifikasi untuk slot ini sudah ada di database dan apakah statusnya berubah
-                        boolean statusBerubah = true;
-                        if (notifSnapshot != null && notifSnapshot.hasChild(slotKey)) {
-                            HistoryParkir existingNotif = notifSnapshot.child(slotKey).getValue(HistoryParkir.class);
-                            if (existingNotif != null && existingNotif.status != null) {
-                                Log.d("SmartParkingDebug", "HomeActivity: Existing status for " + slotKey + " is '" + existingNotif.status + "', new status is '" + statusTeks + "'");
-                                // Jika status sama dengan sebelumnya, jangan ubah waktu/statusnya
-                                if (existingNotif.status.equals(statusTeks)) {
-                                    statusBerubah = false;
-                                }
-                            }
-                        }
-
-                        // Hanya update ke Firebase jika statusnya memang berubah dari sebelumnya
-                        if (statusBerubah) {
-                            Log.d("SmartParkingDebug", "HomeActivity: Status changed for " + slotKey + ". Writing to Firebase: status=" + statusTeks + ", waktu=" + currentTime);
-                            HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
-                            notificationRef.child(slotKey).setValue(notifData)
-                                    .addOnSuccessListener(aVoid -> Log.d("SmartParkingDebug", "HomeActivity: Successfully updated " + slotKey + " in SlotNotifications"))
-                                    .addOnFailureListener(e -> Log.e("SmartParkingDebug", "HomeActivity: Failed to update " + slotKey + " in SlotNotifications", e));
-                        } else {
-                            Log.d("SmartParkingDebug", "HomeActivity: No status change for " + slotKey + ". Skipping update.");
+                // Periksa apakah notifikasi untuk slot ini sudah ada di database dan apakah statusnya berubah
+                boolean statusBerubah = true;
+                if (latestNotifSnapshot != null && latestNotifSnapshot.hasChild(slotKey)) {
+                    HistoryParkir existingNotif = latestNotifSnapshot.child(slotKey).getValue(HistoryParkir.class);
+                    if (existingNotif != null && existingNotif.status != null) {
+                        Log.d("SmartParkingDebug", "HomeActivity: Existing status for " + slotKey + " is '" + existingNotif.status + "', new status is '" + statusTeks + "'");
+                        // Jika status sama dengan sebelumnya, jangan ubah waktu/statusnya
+                        if (existingNotif.status.equals(statusTeks)) {
+                            statusBerubah = false;
                         }
                     }
                 }
-            } else {
-                Log.e("SmartParkingDebug", "HomeActivity: Failed to retrieve existing notifications", task.getException());
+
+                // Hanya update ke Firebase jika statusnya memang berubah dari sebelumnya
+                if (statusBerubah) {
+                    Log.d("SmartParkingDebug", "HomeActivity: Status changed for " + slotKey + ". Writing to Firebase: status=" + statusTeks + ", waktu=" + currentTime);
+                    HistoryParkir notifData = new HistoryParkir(slotLetter, statusTeks, currentTime);
+                    notificationRef.child(slotKey).setValue(notifData)
+                            .addOnSuccessListener(aVoid -> Log.d("SmartParkingDebug", "HomeActivity: Successfully updated " + slotKey + " in SlotNotifications"))
+                            .addOnFailureListener(e -> Log.e("SmartParkingDebug", "HomeActivity: Failed to update " + slotKey + " in SlotNotifications", e));
+                } else {
+                    Log.d("SmartParkingDebug", "HomeActivity: No status change for " + slotKey + ". Skipping update.");
+                }
             }
-        });
+        }
     }
 }
